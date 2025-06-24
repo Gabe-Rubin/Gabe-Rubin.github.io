@@ -13,7 +13,7 @@ body {
 
 .left-column,
 .right-column {
-  padding: 1rem;
+  padding: 2rem;
 }
 
 /* Two column layout for wider screens */
@@ -64,8 +64,8 @@ footer {
 }
 
 .profile-photo {
-  width: 300px;
-  margin-bottom: 1rem;
+  width: 250px;
+  margin-bottom: -.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
