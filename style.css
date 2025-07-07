@@ -87,3 +87,45 @@ footer {
 .right-column li {
   margin: 0.25rem 0;
 }
+
+.blog-post-image-container {
+  margin: 1rem 1rem 0rem 0rem;
+  display: block;
+}
+.blog-post-image-container img {
+  width: 540px;
+  height: auto;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.blog-post-image-container figcaption {
+  margin: 0.5rem 0rem 1rem 0rem;
+  text-align: center;
+  color: #666;
+}
+
+.TLDR hr {
+  display: block;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid #000000;
+  margin: 1rem 0rem;
+  padding: 0;
+}
+
+.Longer-Version hr 
+{
+  display: block;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid #c7c7c7;
+  min-width: 100px;
+  width: 25%;
+  margin: auto;
+}
+
+.Longer-Version h3 
+{
+}
