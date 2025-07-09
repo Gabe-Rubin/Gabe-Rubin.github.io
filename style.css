@@ -61,12 +61,22 @@ nav a {
 }
 
 .nav-bar {
+  margin: 2rem 2rem -4rem 2rem;
+}
 
+.nav-bar hr
+{
+  display: block;
+  height: 0px;
+  border: 0;
+  border-top: 1px solid #c7c7c7;
+  width: 1rem;
+  margin: 0rem 0rem 1rem 0rem;
 }
 
 footer {
   text-align: center;
-  padding: 2rem 1rem;
+  padding: 0rem 1rem 2rem 1rem;
   font-size: 0.9rem;
   color: #666;
 }
@@ -145,5 +155,23 @@ footer {
 
 .work-content
 {
-  padding: 1rem;
+  margin: 4rem 2rem 0rem 4rem;
+}
+
+.work-content h3
+{
+  color: #555555;
+  margin: auto;
+}
+
+.work-content li
+{
+  margin: 0.25rem 0;
+}
+
+.work-content ul
+{
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
 }

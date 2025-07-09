@@ -3,75 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>E155, Custom MIDI Keyboard, HMC – Gabe Rubin</title>
+  <title>Custom MIDI Keyboard – Gabe Rubin</title>
   <link rel="stylesheet" href="../style.css" />
 </head>
 <body>
-  <nav>
+  <nav class="nav-bar">
     <ul>
       <li><a href="/">home</a></li>
       <li><a href="/projects/">projects</a></li>
     </ul>
-  </nav>
+    <hr>
+</nav>
   <main class="container">
-    <!-- Right Column: Navigation -->
-    <aside>
       <section>
         <header>
-            <h1>E155, Custom MIDI Keyboard, HMC</h1>
-            <p>Post Written: <\INSERT DATE THIS WAS FINISHED\></p>
-            <p>Project Start: <\START DATE\></p>
-            <p>Project End: <\END DATE\></p>
+            <h1>Custom MIDI Keyboard, HMC</h1>
+            <p>Post Written: 07/08/2025</p>
+            <p>Project Start: Nov 2017</p>
+            <p>Project End: Dec 2017</p>
         </header>
         <div class="tldr">
-            <h2><\LONGER MORE EXPLANATORY TITLE\></h2>
+          <p><b>DISCLAIMER: This post is sparse as it was part of a backlog of posts.
+            It may be updated in the future.</b></p>
+            <h2>Harvey Mudd College E155: MicroPs</h2>
             <h3>TL;DR</h3>
             <p>
-                TOO LONG DIDN'T READ VERSION, CONSIDER ADDING AT LEAST ONE PHOTO IF POSSIBLE
+              As a final project and a two person team, we built a custom MIDI keyboard using a Raspberry Pi and a Cyclone IV FPGA.
+              This was one of my favorite courses.
             </p>
             <hr>
         </div>
         <div class="longer-version">
             <h2>Longer Version</h2>
             <p>
-                SUPER BRIEF INTRO TO LONGER VERSION
-            </p>
-            <br>
-            <hr>
-            <h3>Motivation</h3>
-            <p>
-                MOTIVATION FOR THE PROJECT
+                I'd love to write more and reflect more on this later. In the meantime, to get through the backlog, here's the résumé version.
             </p>
             <hr>
-            <h3>Background</h3>
-            <p>
-                PROJECT BACKGROUND
-            </p>
-            <hr>
-            <h3>The Fun Part</h3>
-            <p>
-                What work occurred?
-            </p>
-            <h4><\SUB HEADINGS FOR PARTS OF THE PROJECT IF NECESSARY\></h4>
-            <p>
-                STUFF
-            </p>
-            <h4><\SUB HEADINGS FOR PARTS OF THE PROJECT IF NECESSARY\></h4>
-            <p>
-                STUFF
-            </p>
-            <h3>Retrospective</h3>
-            <p>
-                What would I do differently next time?
-            </p>
+              <ul>
+                <li>Worked on a two-person team to design and implement a customizable system to interpret MIDI commands, outputting the desired waveform at the desired frequency.</li>
+                <li>Used RPi to interpret MIDI commands over USB.</li>
+                <li>Adapted a MIDI library in C to process custom commands and send data over SPI.</li>
+                <li>Used SPI to communicate between a RPi 3.0 and a Cyclone IV FPGA.</li>
+                <li>Interpreted FPGA SPI for dynamic waveform generation.</li>
+                <li>Used I2C to interface between Cyclone IV FPGA and DAC.</li>
+              </ul>
         </div>
       </section>
-    </aside>
-
-    <!-- Left Column: Interests Content -->
-    <section>
-
-    </section>
   </main>
 
   <footer>
