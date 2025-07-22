@@ -175,3 +175,9 @@ footer {
   margin-top: 0.5rem;
   margin-bottom: 1rem;
 }
+
+.code-block
+{
+  display: block;
+  white-space:pre-wrap;
+}
