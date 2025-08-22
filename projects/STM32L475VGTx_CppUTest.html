@@ -45,7 +45,7 @@
                 I've finally made time to start working through it. TDD is a wonderful tool and my preferred way to do development.
                 Unfortunately, getting it started is not always straightforward - especially on an embedded target. I was comfortably making my
                 way through the book and its exercises, until I got to the end of chapter 5... Chapter 5, exercise 2 asks the 
-                reader to Compile CppUTest (or Unity) for their target. Well, after some time, I've got it working!
+                reader to compile CppUTest (or Unity) for their target. Well, after some time, I've got it working!
             </p>
             <p>
                 My hope is to spare you the trouble and headache and share my learnings.
@@ -67,7 +67,7 @@
             </p>
             <h3>TL;DR: How to get it done</h3>
             <p>
-                I'm not going to cover organization or build targets, just the bare-minimum to get things done in this section.
+                I'm not going to cover organization or build targets, just the bare minimum to get things done in this section.
                 <ol>
                     <li>Have a project (that builds and runs) where you want to use CppUTest. (I recommend trying this with an empty project that runs - Hello World style).</li>
                     <li>Clone the <a href="https://github.com/cpputest/cpputest" target="_blank">CppUTest repo</a>.</li>
@@ -82,7 +82,7 @@
                             <li>We exclude the two <code>AllTests.cpp</code> files because they define <code>main</code>, which your project should already have.</li>
                         </ul>
                     </li>
-                    <li> Define <code>-D</code> the following for your preprocessor. You need to choose these based on what you have available use on your platform. The notes below each define are not exhaustive and may change.
+                    <li> Define <code>-D</code> the following for your preprocessor. You need to choose these based on what you have available to use on your platform. The notes below each define are not exhaustive and may change.
                         <ul>
                             <li><code>CPPUTEST_USE_MEM_LEAK_DETECTION</code> or <code>CPPUTEST_MEM_LEAK_DETECTION_DISABLED</code></li>
                             <ul>
@@ -160,7 +160,7 @@
                         </ul>
                     </li>
                     <br>
-                    <li>Enable float support for <code>printf</code> if it's not already enabled. If you're not sure, you will find out later when the CppUTest's tests fail. I'm not sure if you can skip this step if you're not using a print style communication interface (Ex. LED alternative to indicate test success or failure).
+                    <li>Enable float support for <code>printf</code> if it's not already enabled. If you're not sure, you will find out later when CppUTest's tests fail. I'm not sure if you can skip this step if you're not using a print-style communication interface (e.g. LED alternative to indicate test success or failure).
                         <ul>
                             <li>For newlib-nano <code>-u _printf_float</code>.</li>
                         </ul>
@@ -194,7 +194,7 @@ CommandLineTestRunner::RunAllTests(argc, argv);
                 Originally, I built CppUTest as a static library and linked against it. This has its advantages and disadvantages.
                 Keeping track of <code>#defines</code> and settings for both the CppUTest static library build and project build is a downside.
                 I think not including CppUTest files in your project is an advantage. Additionally, you can create function pointers for your <code>PlatformSpecific</code>
-                when building CppUtest and then implement these in your project. When linking against the CppUTest static library the linker resolves the symbols
+                when building CppUTest and then implement these in your project. When linking against the CppUTest static library the linker resolves the symbols
                 with whatever you've defined in your project. This keeps CppUTest and your project code separate. For this blog post, I'm not going to share more details on the static library approach.
             </p>
             <h4>Defines and Undefines</h4>
@@ -228,7 +228,7 @@ CommandLineTestRunner::RunAllTests(argc, argv);
             </p>
             <h4>PlatformSpecific Code</h4>
             <p>
-                Here's the platform specific code I used:
+                Here's the platform-specific code I used:
             </p>
             <code class="code-block">
 // Written by Gabriel Rubin on 07/01/2025
@@ -461,7 +461,7 @@ extern "C" void STM32L475VGTxAbort(void)
             </code>
             <h4>Binary Size</h4>
             <p>
-                When trying to build the tests for CppUTest and CppUTestExt the binary/image size was too large.
+                When trying to build the tests for CppUTest and CppUTestExt, the binary/image size was too large.
                 Instead, I broke them out into two targets which made the size compatible with my platform.
             </p>
             <h3>Thoughts for Extensibility</h3>
