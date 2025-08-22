@@ -18,15 +18,15 @@
       <section>
         <header>
             <h1>CppUTest on STM32L475VGTx</h1>
-            <p>Post Written: In Progress</p>
+            <p>Post Written: 08/22/2025</p>
             <p>Project Start: Jul 2025</p>
-            <p>Project End: In Progress</p>
+            <p>Project End: August 2025</p>
         </header>
         <div class="tldr">
             <h2>Getting CppUTest and CppUTestExt Running on an STM32L475VGTx</h2>
             <h3>TL;DR</h3>
             <p>
-                I got CppUTest running on a STM32LE75VGTx. I have yet to verify but this methodology should work for
+                I got CppUTest running on a STM32L475VGTx. I have yet to verify but this methodology should work for
                 any embedded target using <code>arm-none-eabi-gcc</code> with <code>newlib nano</code>. Reasoning would tell me that
                 using <code>newlib</code> and <code>arm-none-eabi-gcc</code> should work.
             </p>
@@ -36,14 +36,14 @@
             <h2>Longer Version</h2>
             <p>
                 I really struggled to write this post because there are so many ways to incorporate CppUTest into your project.
-                However, there are a few things that <b>must</b> be done. So, I'm not going to make any reccommendations around organizational types of things.
+                However, there are a few things that <b>must</b> be done. So, I'm not going to make any recommendations around organizational types of things.
                 We'll keep it simple and focus only on the necessities. The rest, like static library, submodule, etc. is up to you. I will share how I chose to do it.
                 Maybe I'll do it differently later.
             </p>
             <p>
-                Two years after getting my hands on <i>Test-Driven Development for Embeddded C</i>,
+                Two years after getting my hands on <i>Test-Driven Development for Embedded C</i>,
                 I've finally made time to start working through it. TDD is a wonderful tool and my preferred way to do development.
-                Unfortunately, getting it started it's not always straightforward - especially on an embedded target. I was comfortably making my
+                Unfortunately, getting it started is not always straightforward - especially on an embedded target. I was comfortably making my
                 way through the book and its exercises, until I got to the end of chapter 5... Chapter 5, exercise 2 asks the 
                 reader to Compile CppUTest (or Unity) for their target. Well, after some time, I've got it working!
             </p>
@@ -149,7 +149,7 @@
                         Choose to disable them indirectly by using the corresponding <code>*_DISABLED</code> define. Or directly <code>CPPUTEST_*=0</code> or <code>CPPUTEST_*=1</code>.
                         <br>
                         <br>
-                        DO NOT define the following unless you're using them. In fact, I would explicitely set them as undefined (<code>-UCPPUTEST_HAVE_*</code>) UNLESS you're using them. This is because in CppUTest it just checks to see if the macro has been defined.
+                        DO NOT define the following unless you're using them. In fact, I would explicitly set them as undefined (<code>-UCPPUTEST_HAVE_*</code>) UNLESS you're using them. This is because in CppUTest it just checks to see if the macro has been defined.
                         <ul>
                             <li><code>CPPUTEST_HAVE_STRDUP</code></li>
                             <li><code>CPPUTEST_HAVE_FORK</code></li>
@@ -476,7 +476,6 @@ extern "C" void STM32L475VGTxAbort(void)
         </div>
       </section>
   </main>
-
   <footer>
     <p>© 2025 Gabe Rubin - hosted on GitHub Pages</p>
     <p>This website is intentionally simple - see <a href="/writing/simplicity.html">why</a></p>
