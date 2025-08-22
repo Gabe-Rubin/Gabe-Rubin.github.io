@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CppUTest on STM32L475VGTx – Gabe Rubin</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <nav class="nav-bar">
+    <ul>
+      <li><a href="/">home</a></li>
+      <li><a href="/projects/">projects</a></li>
+    </ul>
+    <hr>
+</nav>
+  <main class="container">
+      <section>
+        <header>
+            <h1>CppUTest on STM32L475VGTx</h1>
+            <p>Post Written: In Progress</p>
+            <p>Project Start: Jul 2025</p>
+            <p>Project End: In Progress</p>
+        </header>
+        <div class="tldr">
+            <h2>Getting CppUTest and CppUTestExt Running on an STM32L475VGTx</h2>
+            <h3>TL;DR</h3>
+            <p>
+                I got CppUTest running on a STM32LE75VGTx. I have yet to verify but this methodology should work for
+                any embedded target using <code>arm-none-eabi-gcc</code> with <code>newlib nano</code>. Reasoning would tell me that
+                using <code>newlib</code> and <code>arm-none-eabi-gcc</code> should work.
+            </p>
+            <hr>
+        </div>
+        <div class="longer-version">
+            <h2>Longer Version</h2>
+            <p>
+                I really struggled to write this post because there are so many ways to incorporate CppUTest into your project.
+                However, there are a few things that <b>must</b> be done. So, I'm not going to make any reccommendations around organizational types of things.
+                We'll keep it simple and focus only on the necessities. The rest, like static library, submodule, etc. is up to you. I will share how I chose to do it.
+                Maybe I'll do it differently later.
+            </p>
+            <p>
+                Two years after getting my hands on <i>Test-Driven Development for Embeddded C</i>,
+                I've finally made time to start working through it. TDD is a wonderful tool and my preferred way to do development.
+                Unfortunately, getting it started it's not always straightforward - especially on an embedded target. I was comfortably making my
+                way through the book and its exercises, until I got to the end of chapter 5... Chapter 5, exercise 2 asks the 
+                reader to Compile CppUTest (or Unity) for their target. Well, after some time, I've got it working!
+            </p>
+            <p>
+                My hope is to spare you the trouble and headache and share my learnings.
+                Between <a href="https://cpputest.github.io/manual.html" target="_blank">https://cpputest.github.io/manual.html</a> and <a href="https://github.com/cpputest/cpputest" target="_blank">https://github.com/cpputest/cpputest</a> I was left confused.
+                It wasn't immediately apparent to me that most of the getting started information was not intended for embedded use. <a href="https://cpputest.github.io/stories.html" target="_blank"><i>Platform Stories</i></a> had some hints
+                but I think a big overview would've been helpful. I'm grateful for CppUTest and those who maintain it. I'd like to give back, so here we go!
+            </p>
+            <p>
+                All of this is my working understanding. I didn't develop CppUTest so please don't defer to me as an expert.
+                If you have a better way of doing this, I'd love to hear about it!
+            </p>
+            <p>
+                I'll share:
+                <ul>
+                    <li>TL;DR: How to get it done</li>
+                    <li>How I did it</li>
+                    <li>Thoughts for Extensibility</li>
+                </ul>
+            </p>
+            <h3>TL;DR: How to get it done</h3>
+            <p>
+                I'm not going to cover organization or build targets, just the bare-minimum to get things done in this section.
+                <ol>
+                    <li>Have a project (that builds and runs) where you want to use CppUTest. (I recommend trying this with an empty project that runs - Hello World style).</li>
+                    <li>Clone the <a href="https://github.com/cpputest/cpputest" target="_blank">CppUTest repo</a>.</li>
+                    <li>Incorporate the following files into your project:
+                        <ul>
+                            <li>All of the <code>.h</code> files in <code>cpputest/include/CppUTest</code></li>
+                            <li>All of the <code>.h</code> files in <code>cpputest/include/CppUTestExt</code></li>
+                            <li>All of the <code>.cpp</code> files in <code>cpputest/src/CppUTest</code></li>
+                            <li>All of the <code>.cpp</code> files in <code>cpputest/src/CppUTestExt</code></li>
+                            <li>All of the <code>.h</code> and <code>.cpp</code> files in <code>cpputest/test/CppUTest</code> <b>EXCEPT</b> <code>cpputest/test/CppUTest/AllTests.cpp</code></li>
+                            <li>All of the <code>.h</code> and <code>.cpp</code> files in <code>cpputest/test/CppUTest</code> <b>EXCEPT</b> <code>cpputest/test/CppUTestExt/AllTests.cpp</code></li>
+                            <li>We exclude the two <code>AllTests.cpp</code> files because they define <code>main</code>, which your project should already have.</li>
+                        </ul>
+                    </li>
+                    <li> Define <code>-D</code> the following for your preprocessor. You need to choose these based on what you have available use on your platform. The notes below each define are not exhaustive and may change.
+                        <ul>
+                            <li><code>CPPUTEST_USE_MEM_LEAK_DETECTION</code> or <code>CPPUTEST_MEM_LEAK_DETECTION_DISABLED</code></li>
+                            <ul>
+                                <li>Tells CppUTest to enable or disable memory leak detection.</li>
+                                <li>This is done by overriding the global operator for <code>new</code>, <code>delete</code>, <code>malloc</code>, and <code>free</code>.</li>
+                                <li><code>CPPUTEST_MEM_LEAK_DETECTION_DISABLED</code> can be used in place of <code>-DCPPUTEST_USE_MEM_LEAK_DETECTION=0</code>.</li>
+                            </ul>
+                            <li><code>CPPUTEST_USE_LONG_LONG</code> or <code>CPPUTEST_LONG_LONG_DISABLED</code></li>
+                            <ul>
+                                <li>Tells CppUTest if <code>long long</code> is available.</li>
+                                <li><code>CPPUTEST_LONG_LONG_DISABLED</code> can be used in place of <code>-DCPPUTEST_USE_LONG_LONG=0</code>.</li>
+                            </ul>
+                            <li><code>CPPUTEST_HAVE_STRDUP</code></li>
+                            <ul>
+                                <li>Tells CppUTest if string duplicate is available.</li>
+                                <li>Used in <code>"StandardCLibrary.h"</code> to determine if <code>&ltstring.h&gt</code> will be included.</li>
+                            </ul>
+                            <li><code>CPPUTEST_HAVE_FORK</code></li>
+                            <ul>
+                                <li>Tells CppUTest if we have <code>fork()</code>.</li>
+                                <li>We can implement our own version when implementing what is defined in <code>PlatformSpecificFunctions.h</code> and <code>PlatformSpecificFunctions_c.h</code>.</li>
+                            </ul>
+                            <li><code>CPPUTEST_HAVE_WAITPID</code></li>
+                            <ul>
+                                <li>Tells CppUTest if we have <code>waitpid()</code>.</li>
+                                <li>We can implement our own version when implementing what is defined in <code>PlatformSpecificFunctions.h</code> and <code>PlatformSpecificFunctions_c.h</code>.</li>
+                            </ul>
+                            <li><code>CPPUTEST_HAVE_KILL</code></li>
+                            <ul>
+                                <li>Tells CppUTest if we have <code>kill()</code>.</li>
+                                <li>We can implement our own version when implementing what is defined in <code>PlatformSpecificFunctions.h</code> and <code>PlatformSpecificFunctions_c.h</code>.</li>
+                            </ul>
+                            <li><code>CPPUTEST_HAVE_PTHREAD_MUTEX_LOCK</code></li>
+                            <ul>
+                                <li>Tells CppUTest if we have <code>&ltpthread.h&gt</code>.</li>
+                                <li>We can implement our own version when implementing what is defined in <code>PlatformSpecificFunctions.h</code> and <code>PlatformSpecificFunctions_c.h</code>.</li>
+                            </ul>
+                            <li><code>CPPUTEST_HAVE_GETTIMEOFDAY</code></li>
+                            <ul>
+                                <li>Tells CppUTest if we have <code>&ltsys/time.h&gt</code>.</li>
+                                <li>We can implement our own version when implementing what is defined in <code>PlatformSpecificFunctions.h</code> and <code>PlatformSpecificFunctions_c.h</code>.</li>
+                            </ul>
+                            <li><code>CPPUTEST_USE_STD_C_LIB</code> or <code>CPPUTEST_STD_C_LIB_DISABLED</code></li>
+                            <ul>
+                                <li>Tells CppUTest if we have the C standard library.</li>
+                                <li><code>CPPUTEST_STD_C_LIB_DISABLED</code> can be used in place of <code>-DCPPUTEST_USE_STD_C_LIB=0</code>.</li>
+                            </ul>
+                            <li><code>CPPUTEST_USE_STD_CPP_LIB</code> or <code>CPPUTEST_STD_CPP_LIB_DISABLED</code></li>
+                            <ul>
+                                <li>Tells CppUTest if we have the C++ standard library.</li>
+                                <li><code>CPPUTEST_STD_CPP_LIB_DISABLED</code> can be used in place of <code>-DCPPUTEST_USE_STD_CPP_LIB=0</code>.</li>
+                            </ul>
+                        </ul>
+                        I encourage you to explore the downstream effects of each of these macros.
+                        <br>
+                        <br>
+                        THIS IS IMPORTANT! The following should always be defined:
+                        <ul>
+                            <li><code>CPPUTEST_USE_MEM_LEAK_DETECTION</code> or <code>CPPUTEST_MEM_LEAK_DETECTION_DISABLED</code></li>
+                            <li><code>CPPUTEST_USE_LONG_LONG</code> or <code>CPPUTEST_LONG_LONG_DISABLED</code></li>
+                            <li><code>CPPUTEST_USE_STD_C_LIB</code> or <code>CPPUTEST_STD_C_LIB_DISABLED</code></li>
+                            <li><code>CPPUTEST_USE_STD_CPP_LIB</code> or <code>CPPUTEST_STD_CPP_LIB_DISABLED</code></li>
+                        </ul>
+                        Choose to disable them indirectly by using the corresponding <code>*_DISABLED</code> define. Or directly <code>CPPUTEST_*=0</code> or <code>CPPUTEST_*=1</code>.
+                        <br>
+                        <br>
+                        DO NOT define the following unless you're using them. In fact, I would explicitely set them as undefined (<code>-UCPPUTEST_HAVE_*</code>) UNLESS you're using them. This is because in CppUTest it just checks to see if the macro has been defined.
+                        <ul>
+                            <li><code>CPPUTEST_HAVE_STRDUP</code></li>
+                            <li><code>CPPUTEST_HAVE_FORK</code></li>
+                            <li><code>CPPUTEST_HAVE_WAITPID</code></li>
+                            <li><code>CPPUTEST_HAVE_KILL</code></li>
+                            <li><code>CPPUTEST_HAVE_PTHREAD_MUTEX_LOCK</code></li>
+                            <li><code>CPPUTEST_HAVE_GETTIMEOFDAY</code></li>
+                        </ul>
+                    </li>
+                    <br>
+                    <li>Enable float support for <code>printf</code> if it's not already enabled. If you're not sure, you will find out later when the CppUTest's tests fail. I'm not sure if you can skip this step if you're not using a print style communication interface (Ex. LED alternative to indicate test success or failure).
+                        <ul>
+                            <li>For newlib-nano <code>-u _printf_float</code>.</li>
+                        </ul>
+                    </li>
+                    <li>Create implementations for all of the functions defined in <code>include/cpputest/PlatformSpecificFunctions.h</code> and <code>include/cpputest/PlatformSpecificFunctions_c.h</code>.
+                        <ul>
+                            <li>Figure out how your platform will communicate test outcomes with you. This could be flashing an LED or printing over UART.</li>
+                            <li>This will be implemented in <code>PlatformSpecificFPuts</code>.</li>
+                        </ul>
+                    </li>
+                    <li>Add the following header and code to wherever you plan to call your test code: <code>#include "CppUTest/CommandLineTestRunner.h"</code> and
+                        <code class="code-block">
+//  Can add command line arguments here if you so choose:
+char* argv[] =
+{
+      (char*) 0,
+//      (char*) "-v", // verbose mode
+//      (char*) "-gSimpleStringBuffer",
+//      (char*) "-ojunit",
+};
+int argc = sizeof(argv) / sizeof(char*);
+CommandLineTestRunner::RunAllTests(argc, argv);
+
+                        </code> Wherever you have your <code>main</code> function could be a good place for this code.</li>
+                    <li>Build and run your project on your platform. The CppUTest and CppUTestExt combined executable/image may be too large to run on your system. Consider breaking them into smaller executables/images.</li>
+
+                </ol>
+            </p>
+            <h3>How I Did It</h3>
+            <p>
+                Originally, I built CppUTest as a static library and linked against it. This has its advantages and disadvantages.
+                Keeping track of <code>#defines</code> and settings for both the CppUTest static library build and project build is a downside.
+                I think not including CppUTest files in your project is an advantage. Additionally, you can create function pointers for your <code>PlatformSpecific</code>
+                when building CppUtest and then implement these in your project. When linking against the CppUTest static library the linker resolves the symbols
+                with whatever you've defined in your project. This keeps CppUTest and your project code separate. For this blog post, I'm not going to share more details on the static library approach.
+            </p>
+            <h4>Defines and Undefines</h4>
+            <p>
+                Here are the settings I chose:
+            </p>
+            <p>
+                These were defined in the STM32CubeIDE preprocessor for Assembler, C, and C++.
+            </p>
+                <ul>
+                    <li>CPPUTEST_USE_MEM_LEAK_DETECTION=1</li>
+                    <li>CPPUTEST_USE_LONG_LONG=0</li>
+                    <li>CPPUTEST_USE_STD_C_LIB=1</li>
+                    <li>CPPUTEST_USE_STD_CPP_LIB=0</li>
+                </ul>
+            <p>
+                These were undefined in the STM32CubeIDE preprocessor for Assembler, C, and C++.
+            </p>
+            <ul>
+                <li>CPPUTEST_HAVE_STRDUP</li>
+                <li>CPPUTEST_HAVE_FORK</li>
+                <li>CPPUTEST_HAVE_WAITPID</li>
+                <li>CPPUTEST_HAVE_KILL</li>
+                <li>CPPUTEST_HAVE_PTHREAD_MUTEX_LOCK</li>
+                <li>CPPUTEST_HAVE_GETTIMEOFDAY</li>
+            </ul>
+            <h4>Communication Interface</h4>
+            <p>
+                I chose to use UART so I could get a similar output to what I would experience developing on the host platform.
+                This was done by enabling UART through the STM32CubeIDE.
+            </p>
+            <h4>PlatformSpecific Code</h4>
+            <p>
+                Here's the platform specific code I used:
+            </p>
+            <code class="code-block">
+// Written by Gabriel Rubin on 07/01/2025
+// A good bit of this is copied from other sources. CppUTest platforms being one of them.
+// for use with the STM32L475VGTx MCU.
+
+#include "stm32l4xx_hal.h"
+#include "cmsis_gcc.h"
+#include "stm32l4xx_hal_uart.h"
+
+#include "CppUTest/TestOutput.h"
+#include "CppUTest/PlatformSpecificFunctions_c.h"
+#include "CppUTest/TestHarness.h"
+
+#define  far  // eliminate "meaningless type qualifier" warning
+extern "C" {
+#include <setjmp.h>
+#include <stdio.h>
+#include <math.h>
+#include <cstring>
+}
+#undef far
+
+static jmp_buf test_exit_jmp_buf[10];
+static int jmp_buf_index = 0;
+
+extern UART_HandleTypeDef huart1;
+
+extern "C" TestOutput::WorkingEnvironment STM32L475VGTxGetWorkingEnvironment()
+{
+	//	Not sure why, but we'll copy what is done for GccNoStdC platform.
+	//	It's an enum value anyway. Plus CubeIDE is based on Eclipse.
+	return TestOutput::WorkingEnvironment::eclipse;
+}
+
+extern "C" void STM32L475VGTxRunTestInASeperateProcess(UtestShell* shell, TestPlugin* plugin, TestResult* result)
+{
+	(void)plugin;
+	result->addFailure(TestFailure(shell, "-p doesn't work on this platform, as it is lacking fork.\b"));
+}
+
+extern "C" int STM32L475VGTxFork(void)
+{
+	return 0;
+}
+
+extern "C" int STM32L475VGTxWaitPid(int pid, int* status, int options)
+{
+	return 0;
+}
+
+/* Jumping operations. They manage their own jump buffers */
+extern "C" int STM32L475VGTxSetJmp(void (*function) (void* data), void* data)
+{
+    if (0 == setjmp(test_exit_jmp_buf[jmp_buf_index])) {
+        jmp_buf_index++;
+        function(data);
+        jmp_buf_index--;
+        return 1;
+    }
+    return 0;
+}
+
+extern "C" void STM32L475VGTxLongJmp(void)
+{
+    jmp_buf_index--;
+    longjmp(test_exit_jmp_buf[jmp_buf_index], 1);
+}
+
+extern "C" void STM32L475VGTxRestoreJumpBuffer(void)
+{
+	jmp_buf_index--;
+}
+
+/* Time operations */
+extern "C" unsigned long STM32L475VGTxTimeInMillis()
+{
+	return HAL_GetTick();
+}
+
+extern "C" const char* STM32L475VGTxTimeString()
+{
+	unsigned long curTime = STM32L475VGTxTimeInMillis();
+	constexpr size_t MAX_LONG_UNSIGNED_STRING_SIZE = 11;
+	static char timeString[MAX_LONG_UNSIGNED_STRING_SIZE] = {};
+	snprintf(timeString, sizeof(timeString), "%lu", curTime);
+	return timeString;
+}
+
+/* String operations */
+extern "C" int STM32L475VGTxVSNprintf(char *str, size_t size, const char* format, va_list va_args_list)
+{
+	return vsnprintf(str, size, format, va_args_list);
+}
+
+/* Misc */
+extern "C" double STM32L475VGTxFabs(double d)
+{
+	return fabs(d);
+}
+
+extern "C" int STM32L475VGTxIsNan(double d)
+{
+	return isnan(d);
+}
+
+extern "C" int STM32L475VGTxIsInf(double d)
+{
+	return isinf(d);
+}
+
+extern "C" int STM32L475VGTxAtExit(void(*func)(void))
+{
+	return atexit(func);
+}
+
+/* IO operations */
+extern "C" PlatformSpecificFile STM32L475VGTxFOpen(const char* filename, const char* flag)
+{
+//	return fopen(filename, flag);
+	return NULL;
+}
+
+extern "C" void STM32L475VGTxFPuts(const char* str, PlatformSpecificFile file)
+{
+//	fputs(str, stdout);
+	(void)file;
+	char outputStr[1000] = {};
+	size_t curPos = 0;
+	char curChar = 0;
+	size_t strLength = strlen(str);
+	for(size_t i = 0; i < strLength; ++i)
+	{
+		curChar = str[i];
+		if(curChar == '\n')
+		{
+				outputStr[curPos] = '\r';
+				++curPos;
+		}
+		outputStr[curPos] = curChar;
+		++curPos;
+	}
+	HAL_UART_Transmit(&huart1, (const uint8_t*)outputStr, curPos, HAL_MAX_DELAY);
+}
+
+extern "C" void STM32L475VGTxFClose(PlatformSpecificFile file)
+{
+//	fclose((FILE *) file);
+//	do nothing
+	// Suppress unused warnings
+	(void)file;
+}
+
+extern "C" void STM32L475VGTxFlush(void)
+{
+//	fflush(stdout);
+//	const uint8_t flushStr[] = "\r";
+//	HAL_UART_Transmit(&huart1, (uint8_t*)NULL, 0, HAL_MAX_DELAY);
+}
+
+PlatformSpecificFile STM32L475VGTxStdOut = stdout;
+
+/* Random operations */
+extern "C" void STM32L475VGTxSrand(unsigned int seed)
+{
+	srand(seed);
+}
+
+extern "C" int STM32L475VGTxRand(void)
+{
+	return rand();
+}
+
+/* Dynamic Memory operations */
+extern "C" void* STM32L475VGTxMalloc(size_t size)
+{
+	return malloc(size);
+}
+
+extern "C" void* STM32L475VGTxRealloc(void* memory, size_t size)
+{
+	return realloc(memory, size);
+}
+
+extern "C" void STM32L475VGTxFree(void* memory)
+{
+	free(memory);
+}
+
+extern "C" void* STM32L475VGTxMemCpy(void* s1, const void* s2, size_t size)
+{
+	return memcpy(s1, s2, size);
+}
+
+extern "C" void* STM32L475VGTxMemset(void* mem, int c, size_t size)
+{
+	return memset(mem, c, size);
+}
+
+
+typedef void* PlatformSpecificMutex;
+extern "C" PlatformSpecificMutex STM32L475VGTxMutexCreate(void)
+{
+	return NULL;
+}
+
+extern "C" void STM32L475VGTxMutexLock(PlatformSpecificMutex mtx)
+{
+	// Suppress unused warnings
+	(void)mtx;
+}
+
+extern "C" void STM32L475VGTxMutexUnlock(PlatformSpecificMutex mtx)
+{
+	// Suppress unused warnings
+	(void)mtx;
+}
+
+extern "C" void STM32L475VGTxMutexDestroy(PlatformSpecificMutex mtx)
+{
+	// Suppress unused warnings
+	(void)mtx;
+}
+
+extern "C" void STM32L475VGTxAbort(void)
+{
+//	Should do something better than calling stdlib abort here.
+	abort();
+}
+            </code>
+            <h4>Binary Size</h4>
+            <p>
+                When trying to build the tests for CppUTest and CppUTestExt the binary/image size was too large.
+                Instead, I broke them out into two targets which made the size compatible with my platform.
+            </p>
+            <h3>Thoughts for Extensibility</h3>
+            <p>
+                Here are a few thoughts on how to make getting started with CppUTest on an embedded platform more friendly.
+                It'd be great to have a guide that explains all of the "switches" (macros) that can be flipped for different system behavior.
+                It seems like there was a push to automate a lot of this, which is appreciated, but it seems like the embedded side of things may have suffered in the process.
+                Parity across the macros would be nice. It's confusing that defining some macros to 0 means they work, while that's not the case for others.
+                Creating a way to decouple CppUTest from the project would be great. I think a static library approach as mentioned earlier could work well so long as there's some sort of unifying config when they're being built.
+                This is a bigger ask when working with STM32CubeIDE.
+            </p>
+            <h3>Nitty Gritty</h3>
+            <p>
+                Here's what's needed to get CppUTest and CppUTestExt to work:
+            </p>
+            <h4>Items from CppUTest</h4>
+                <ul>
+                    <li>All of the header files in <code>cpputest/include/CppUTest</code></li>
+                    <li>All of the header files in <code>cpputest/include/CppUTestExt</code></li>
+                    <li>All of the <code>.cpp</code> files in <code>cpputest/src/CppUTest</code></li>
+                    <li>All of the <code>.cpp</code> files in <code>cpputest/src/CppUTestExt</code></li>
+                </ul>
+            <h4>Custom UtestPlatform.cpp</h4>
+            <p>
+                This file will implement the declarations that occur in <code>include/cpputest/PlatformSpecificFunctions.h</code> and <code>include/cpputest/PlatformSpecificFunctions_c.h</code>.
+            </p>
+            <h4>Custom Build Settings</h4>
+            <p>
+                Don't actually need to set these but you can choose to disable some things.
+                You need to define some build variables for the desired behavior you'd like. SAY WHAT THESE ARE
+            </p>
+            <h4>Enable Floating Point</h4>
+            <p>
+                More here
+            </p>
+            <h4>Use Newlib Nano</h4>
+            <p>
+                More Here
+            </p>
+            <h4>Determine how printing will occur</h4>
+            <p>
+                More Here
+            </p>
+            <h3>Big Picture</h3>
+            <p>
+                To get CppUTest working you need to build the code for your platform and integrate it into your project. They've designed the code to play nicely with different platforms.
+                Understanding this platform abstraction is pivotal to integrating CppUTest on an unsupported platform.
+            </p>
+            <p>
+                When building for most host systems such as Linux, macOS, or Windows your platform is autodetected in CMake (more on this later). I tried it on macOS and it just worked, which was great!
+            </p>
+            <p>
+                Unless otherwise stated, going forward, "target" will imply embedded (i.e. not host).
+            </p>
+            <p>
+                
+            </p>
+            <p>
+                Let's take a moment to understand the platform files. <code>PlatformSpecificFunctions.h</code> and <code>PlatformSpecificFunctions_c.h</code> live in <code>include/cpputest/</code>.
+                These files define all of the platform specific functions that CppUTest needs. That's great design! It compartmentalizes platform specific code.
+                This speaks to TDD and concepts Grenning discusses in <i>Test-Driven Development for Embeddded C</i>. To Grenning's points, I think it'd be even better if we could
+                further decouple the platform code. I'll discuss my approach later.
+            </p>
+            <p>
+                Anyways, this means we can create an implementation file, implementing the functions defined in <code>PlatformSpecificFunctions.h</code> and <code>PlatformSpecificFunctions_c.h</code>.
+                During compilation the header will be compiled and during linking it will find our symbols. Examples of this can be seen in
+                <code>src/Platforms/PLATFORM_NAME/UtestPlatform.cpp</code>, where <code>PLATFORM_NAME</code> is the name of a specific platform.
+            </p>
+            <p>
+                Hold on a minute... I had a great and super easy time building CppUTest on my host system.
+                Why are platforms only becoming a problem now? A little CMake magic...
+                If you examine <code>CMakeLists.txt</code> in the root directory of CppUTest you'll see a variable, <code>CPPUTEST_PLATFORM</code>.
+                Truthfully, I don't have much CMake experience, but on examination some deduction occurs where <code>CPPUTEST_PLATFORM</code> is set automagically.
+                Once you spend a moment looking at <code>CMakeLists.txt</code> it's no longer magic.
+            </p>
+            <p>
+                Alas, this <code>CPPUTEST_PLATFORM</code> magic may not work on your embedded system. So it is up to you to become the magician!
+                <br>
+                <br>
+                <hr>
+                REMOVE START
+                <hr>
+                I think we can get rid of this section. It could be a submodule, out of the repo, etc. just put CppUTest Platform somewhere else
+                Before we discuss how you can get this done, I want to take a step back and talk about what was a stumbling block for me.
+                I didn't want a bunch of different copies of CppUTest, I wanted to clone the repo and have it work. Ideally, I wanted CppUTest as a git submodule. If you're like me, save yourself the anguish and let it go for now...
+                <hr>
+                REMOVE END
+                <hr>
+
+            <p>
+                Gotchas are build settings needs to match
+                Benefit of static library is doesn't need to be rebuilt a bunch, keeps a nice separation between CppUTest and your actual code.
+            </p>
+            </p>
+            <p>
+                For the time being, it makes it easier to just put CppUTest into your project. There are two main reasons for this at the moment.
+                The first is that you don't need to update settings, compiler options, flags, etc. in multiple places. This removes a huge source of potential error.
+                The second is that you're going to make adjustments to CppUTest when adding your <code>UtestPlatform.cpp</code>. The second could be avoided if you wanted to
+                put your file somewhere else, but it's nice to keep it organized.
+
+            </p>
+            <p>
+                So we could build it as a static library with undefined symbols and link them or we can make them part of our project and just build the files. I think the latter is the simpliest solution. Doing it this way we don't need to worry about making sure our build settings match, etc.
+
+            </p>
+            <h3>Get it Working</h3>
+            <p>
+                Here I'll walk folks through my approach.
+            </p>
+
+            <h3>Proposed Improvement</h3>
+            <p>
+                I think we can make CppUTest even easier to use on an unsupported platform and further decouple platform code from CppUTest code.
+                If we build CppUTest as a static library it can have <b>undefined symbols</b> for our <b>platform specific code</b>.
+                We can implement these symbols in platform specific code outside of the library. When we go to link CppUTest into our platform code
+                it can resolve the undefined symbols. This achieves decoupling and a more extensible approach.
+                Let me give an incomplete example below:
+            </p>
+            <p>
+                In CppUTest we have a file <code>src/Platforms/CustomPlatform/UtestPlatform.cpp</code>
+            <code class="code-block">
+    #include "CppUTest/PlatformSpecificFunctions.h"
+    #include "CppUTest/PlatformSpecificFunctions_c.h"
+    ...
+    extern "C" double CustomCppUTestPlatformFabs(double d);
+    extern "C" int CustomCppUTestPlatformIsNan(double d);
+    extern "C" int CustomCppUTestPlatformIsInf(double d);
+    extern "C" int CustomCppUTestPlatformAtExit(void(*func)(void));
+
+    double (*PlatformSpecificFabs)(double) = CustomCppUTestPlatformFabs;
+    int (*PlatformSpecificIsNan)(double) = CustomCppUTestPlatformIsNan;
+    int (*PlatformSpecificIsInf)(double) = CustomCppUTestPlatformIsInf;
+    int (*PlatformSpecificAtExit)(void(*)(void)) = CustomCppUTestPlatformAtExit;
+    ...
+            </code>
+
+            In our project, let's call it funProject, we can have a file, let's call it <code>CustomCppUTestPlatform.cpp</code> that implements the defined functions above.
+            <code class="code-block">
+    #include "somePlatformSpecificHeader.h"
+    ...
+    extern "C" double CustomCppUTestPlatformFabs(double d)
+    {
+        //Platform specific implementation
+    }
+
+    extern "C" int CustomCppUTestPlatformIsNan(double d)
+    {
+        //Platform specific implementation
+    }
+
+    extern "C" int CustomCppUTestPlatformIsInf(double d)
+    {
+        //Platform specific implementation
+    }
+
+    extern "C" int CustomCppUTestPlatformAtExit(void(*func)(void))
+    {
+        //Platform specific implementation
+    }
+    ...
+            </code>
+
+    Explain here the benefits of doing it this way HERE
+                As mentioned, I wanted to just clone CppUTest and have it work. Again, this won't work unless you're building for a already supported platform.
+                Instead let's see if we can further decouple the CppUTest code from our project code.
+                This may not be possible at the moment, but once I finish this blog post I am going to try and get this incorporated into CppUTest.
+            </p>
+            <br>
+            <hr>
+            <h3>Motivation</h3>
+            <p>
+                Test-Driven Development (TDD) is an excellent methodology for writing better software.
+                I'm always looking to improve so I figured I'd get better at it!
+            </p>
+            <hr>
+            <h3>Background</h3>
+            <p>
+                PROJECT BACKGROUND
+            </p>
+            <hr>
+            <h3>The Fun Part</h3>
+            <p>
+                What work occurred?
+            </p>
+            <h4><\SUB HEADINGS FOR PARTS OF THE PROJECT IF NECESSARY\></h4>
+            <p>
+                STUFF
+            </p>
+            <h4><\SUB HEADINGS FOR PARTS OF THE PROJECT IF NECESSARY\></h4>
+            <p>
+                STUFF
+            </p>
+            <h3>Retrospective</h3>
+            <p>
+                What would I do differently next time?
+            </p>
+        </div>
+      </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Gabe Rubin - hosted on GitHub Pages</p>
+    <p>This website is intentionally simple - see <a href="/writing/simplicity.html">why</a></p>
+  </footer>
+</body>
+</html>
